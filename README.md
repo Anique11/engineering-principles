@@ -20,6 +20,8 @@ As I gain experience, these documents may evolve. They should be read as a snaps
   How I use AI as an engineering collaborator while retaining responsibility for technical decisions.
 * **project-template**/  
   A starting point for new repositories, including agent guidance and documentation templates that reflect the principles described here.
+* **interaction-protocols**/  
+  Concrete agent interaction protocols for specific use cases. These are protocols that are too small to warrant their own repositories.
 
 ## Relationship to project repositories
 
