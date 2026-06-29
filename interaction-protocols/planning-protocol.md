@@ -1,6 +1,6 @@
 # Planning Protocol
 
-**Version:** 2
+**Version:** 3
 
 ## Purpose
 
@@ -10,26 +10,7 @@ It is configuration, not runtime state.
 
 The Planning State contains only runtime state and references this protocol.
 
-A Planning State is **derived, not edited**. Each new Planning State is generated from the authoritative sources defined below.
-
----
-
-## Planning State Header
-
-Every Planning State begins with the following header.
-
-```text
-# Planning State
-
-Generated: <local date/time>
-Protocol version: <Planning Protocol version used to generate this Planning State>
-```
-
-Requirements:
-
-- `Generated` records the local date and time immediately before generating the Planning State.
-- `Protocol version` records the version of the Planning Protocol used to generate the Planning State.
-- Both fields are mandatory.
+A Planning State is **derived from the authoritative sources and never edited directly**. Each new Planning State is generated from the authoritative sources defined below.
 
 ---
 
@@ -37,22 +18,126 @@ Requirements:
 
 The Planning State uses the following structure:
 
-1. Planning State
-2. Generated
+1. Title
+2. Header
 3. Today
 4. Upcoming
 5. Outstanding
-6. Waiting for others
+6. Waiting / Delegated
 7. Deferred
-8. Recurring
-9. Notes / constraints
-10. Recently completed
-11. Protocol
+8. Notes / constraints
+9. Recently completed
+10. Protocol
 
-The Protocol section contains only:
+------
+### Title
 
-> Read and follow the latest **Planning Protocol**.
+The title of the document is 'Planning State'.
 
+
+### Header
+
+Every Planning State begins with the following header.
+
+```text
+Protocol version: <Planning Protocol version used>
+Planning date: <date this state is for>
+```
+
+Requirements:
+
+- `Protocol version` records the version of the Planning Protocol used to generate the Planning State.
+- `Planning date` records the date this Planning State represents.  
+  If the user has not explicitly provided the planning date in the current message, confirm it before generating a new Planning State.
+- Both fields are mandatory.
+
+------
+### Today
+
+The Today section contains only remaining items for the current day.
+
+It is grouped as: Morning, Afternoon, Evening
+
+The morning/afternoon boundary is approximately 13:00, unless there is a major appointment within about one hour of 13:00; in that case the appointment may serve as the boundary.
+
+The afternoon/evening boundary is approximately 18:00, unless there is a major appointment within about one hour of 18:00; in that case the appointment may serve as the boundary.
+
+When creating a display view, omit past time-of-day sections. Move any unfinished items from past sections into the current section only if they are still actionable today; otherwise move them to Outstanding, Deferred, or Notes/constraints as appropriate.
+Show only the current and future sections.
+
+----------
+### Upcoming
+
+The Upcoming section contains non-calendar tasks, deadlines, constraints, or reminders after the Planning date that need planning attention. It does not duplicate appointments already present in Google Calendar, unless the appointment creates a related non-calendar action.
+
+The section contains three subsections:
+
+- Tomorrow — <weekday> <date>
+- The calendar date two days after the Planning Date, shown only as <weekday> <date>
+- Later
+
+Annotate items in 'Later' with the date they are planned for.
+
+------
+### Outstanding
+
+The Outstanding section contains active tasks that are not scheduled in Today or Upcoming.
+
+Do not duplicate items between Today or Upcoming and Outstanding.
+
+If an item is planned for today, place it in Today.
+If it is active and planned for a specific day that is not Today, place it in Upcoming.
+If it is active but not planned for a specific day, place it in Outstanding.
+
+-----
+### Waiting / Delegated
+
+This section contains all items where progress depends on another person.
+If an item was explictly delegated, include that information.
+
+-----
+### Deferred
+
+This section contains active items that have been intentionally postponed until a specific condition has been met.
+
+The condition may be an event, a dependency, or another explicitly identified trigger, but not delegation to another person.
+
+Once the condition has been satisfied, the item shall be reconsidered for placement in Today, Upcoming, Outstanding, or Waiting / Delegated.
+
+--------
+### Notes / Constraints
+
+This section contains temporary planning information that affects how tasks should be scheduled or interpreted, but is not itself a standalone task.
+
+This section may include:
+
+- temporary scheduling constraints;
+- temporary planning rules that generate actions on one or more Planning Dates;
+- temporary conditions affecting task timing or execution;
+- temporary context required for correct planning.
+
+Permanent planning rules and heuristics belong in the Planning Protocol, not in the Planning State.
+
+When a note or constraint implies an action on the Planning Date, that action shall be represented in Today during Display and Generate.
+
+Remove notes and constraints once they are no longer applicable.
+
+
+------
+### Recently Completed
+
+This section MUST contain only items completed since the previous published Planning State.
+
+Do not carry over items from older Planning States.
+
+Do not include historical completed items.
+
+------
+### Protocol
+
+```text
+Read and follow the latest **Planning Protocol**.
+```
 No protocol details are duplicated in the Planning State.
 
 ---
@@ -65,37 +150,78 @@ Planning State generation combines three sources.
 
 Authoritative for appointments.
 
-Always read the next seven days.
-
 ### Planning State
 
 Authoritative for non-calendar planning state.
 
-Always use the latest Planning State.
+Always use the latest published Planning State. A published planning state is one that was sent as e-mail. Versions in chat belong to 'current chat' source.
 
 ### Current chat
 
 Contains changes since the latest Planning State.
 
----
+------
+
+## Actions
+
+Whenever an agent interacts with this document, it can perform one of two defined actions:
+
+1. Display
+2. Generate
+
+------
+
+## Display Algorithm
+
+When asked to read the current planning state, the agent will:
+ 
+1. Read the latest published Planning State.
+2. Read the latest published Planning Protocol.
+3. Read Google Calendar for the next seven days.  
+   Purpose: planning context, finding usable windows, avoiding overload.
+4. Merge Planning State, Calendar and current chat.
+5. Produce a complete derived Planning State view.  
+   Calendar events may be shown or referenced when useful.
+6. Show the Planning state to the user in the chat.  
+   Include the timestamp of the published Planning State email that was used as the source.
+7. Retain retrieved calendar items as context in that chat.
+8. Retain the planning protocol as context in that chat.
+
+### Format
+
+Use rich text to display an easily readable schedule.
+If subsections are empty, omit them.
+If all subsections of a section are omitted, omit the parent section as well.
+
+------
 
 ## Generation Algorithm
 
 When generating a new Planning State:
 
-1. Read the latest Planning Protocol.
-2. Read the latest Planning State.
-3. Read Google Calendar for the next seven days.
+1. Read the latest published Planning Protocol.
+2. Read the latest published Planning State.
+3. Read Google Calendar.  
+   Read only the calendar range covered by dated items in Today and Upcoming, plus any range needed to verify that Upcoming does not duplicate calendar-backed appointments.
+   Purpose: prevent duplicating calendar-backed appointments in `Upcoming`.
 4. Merge Planning State, Calendar and current chat.
-5. Resolve completed items:
-   - remove them from active sections;
-   - add them to **Recently completed** if they were completed since the previous Planning State.
-6. Remove obsolete information.
-7. Update the Generated timestamp.
-8. Set the Protocol version to the version of the Planning Protocol used for generation.
-9. Generate a complete Planning State.
-10. Include the Protocol reference.
-11. Send as a new Planning State message.
+   Do not copy ordinary calendar events into Upcoming unless they create an actionable planning constraint.
+5. Set the Planning Date.
+6. Set the Protocol version to the version of the Planning Protocol used for generation.
+7. Produce a complete Planning State.
+8. Include the Protocol reference.
+9. Send as a new Planning State message to the user's own email.  
+
+### Format
+
+Use the document title as the subject.  
+Generated Planning State emails should use clear Markdown headings and short bullet lists. Preserve the fixed section order, but use subsections where defined. Avoid long flat lists when items can be grouped by time of day, date, dependency, or status.
+Every defined section shall be present, even if empty.
+If a section defines subsections and all of them are empty, include only the section heading.
+Empty sections and subsections shall contain exactly:
+```text
+None
+```
 
 ---
 
@@ -103,10 +229,10 @@ When generating a new Planning State:
 
 Before generating a Planning State verify:
 
-- the latest Planning Protocol has been read;
-- the latest Planning State has been read;
+- the latest published Planning Protocol has been read;
+- the latest published Planning State has been read;
 - Google Calendar has been read;
-- the Generated timestamp is current.
+- the Planning date has been explicitly provided or confirmed.
 
 If any prerequisite cannot be satisfied:
 
@@ -126,24 +252,6 @@ If any prerequisite cannot be satisfied:
 
 ---
 
-## Recently Completed
-
-This section contains only items completed since the previous Planning State.
-
-Purpose:
-
-- provide continuity between Planning States;
-- make recent progress visible;
-- help verify that completed work has been removed from active sections.
-
-When generating a Planning State:
-
-- remove items completed before the previous Planning State;
-- include only items completed since the previous Planning State;
-- if nothing has been completed, leave the section empty or write **None**.
-
----
-
 ## Protocol Maintenance
 
 This document is configuration, not planning state.
@@ -159,7 +267,7 @@ This document is configuration, not planning state.
 
 ### General
 
-- School-day focused work generally starts around 08:45 after breakfast and litterbox.
+- School-day focused work generally starts around 08:45 after breakfast.
 - Avoid starting deep-focus work during the final hour before leaving unless already immersed.
 - Schedule around energy as well as available time.
 - Preserve recovery time when appropriate.
@@ -191,3 +299,20 @@ This document is configuration, not planning state.
 - Validation step added.
 - Recently Completed precisely defined as items completed since the previous Planning State.
 - Protocol maintenance separated from planning state.
+
+### Version 3
+
+- Restructured the protocol to clearly separate **Display** and **Generate** actions.
+- Introduced least-privilege calendar access; calendar is read only as far as required for the action being performed.
+- Added structured `Today` section with distinct behaviour for generated Planning States and display views.
+- Added structured `Upcoming` section with `Tomorrow`, `<weekday> <date>`, and `Later` subsections.
+- Added `Waiting / Delegated` section.
+- Clarified the authoritative source hierarchy, including the definition of a published Planning State.
+- Improved formatting requirements for generated Planning State emails to increase readability.
+- Replaced the generated timestamp with an explicit Planning Date.
+- Removed the `Recurring` section in favour of temporary planning rules in `Notes / Constraints`.
+- Added formal definitions for `Deferred` and `Notes / Constraints`.
+- Clarified the distinction between permanent planning heuristics (Planning Protocol) and temporary planning information (Planning State).
+- Defined how temporary planning rules in `Notes / Constraints` generate actions in `Today`.
+- Generalised formatting rules for generated Planning States, including handling of empty sections and subsections.
+- Added provenance information to the Display action by reporting the timestamp of the published Planning State used as the source.
