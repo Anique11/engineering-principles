@@ -1,6 +1,6 @@
 # Planning Protocol
 
-**Version:** 3
+**Version:** 4
 
 ## Purpose
 
@@ -190,8 +190,10 @@ When asked to read the current planning state, the agent will:
 ### Format
 
 Use rich text to display an easily readable schedule.
-If subsections are empty, omit them.
+Use indented lists to separate subsections from the main sections.
+If subsections are empty, NEVER display them.
 If all subsections of a section are omitted, omit the parent section as well.
+Do not include the `Protocol` section.
 
 ------
 
@@ -316,3 +318,7 @@ This document is configuration, not planning state.
 - Defined how temporary planning rules in `Notes / Constraints` generate actions in `Today`.
 - Generalised formatting rules for generated Planning States, including handling of empty sections and subsections.
 - Added provenance information to the Display action by reporting the timestamp of the published Planning State used as the source.
+
+### Version 4
+
+- refined **Display** formatting rules.
