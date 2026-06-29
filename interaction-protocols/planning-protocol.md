@@ -1,6 +1,6 @@
 # Planning Protocol
 
-**Version:** 4
+**Version:** 5
 
 ## Purpose
 
@@ -281,25 +281,55 @@ This document is configuration, not planning state.
 - Protocol changes never modify historical Planning States.
 
 ---
+## Example agent instructions
 
-## Planning Preferences and Heuristics
+Example instructions to ensure the agent collects all relevant information when performing actions. This implements some guardrails to prevent stale data from being used.
+This protocol assumes three external sources:
 
-### General
+ - Planning Protocol (this document) — defines the algorithms and rules.
+ - Planning State (email) — contains the current planning state and user-maintained information.
+ - Planning Configuration — contains auxiliary configuration referenced by the protocol.
+    Examples:
+         - calendars.txt to point to specific (Google) calendar IDs
+         - preferences.txt to contain user-specific planning preferences
 
-- School-day focused work generally starts around 08:45 after breakfast.
-- Avoid starting deep-focus work during the final hour before leaving unless already immersed.
-- Schedule around energy as well as available time.
-- Preserve recovery time when appropriate.
-- Minimise activation energy by grouping related tasks.
-- Working memory should be offloaded into the Planning State whenever practical.
+```text
+# Planning Protocol
 
-### Laundry
+Load and follow the latest Planning Protocol from:
+https://github.com/Anique11/engineering-principles/blob/main/interaction-protocols/planning-protocol.md
 
-- Wash duration: 2 hours 45 minutes.
-- Preferred hanging window: within 2 hours after completion.
-- Machine supports delayed start up to 13 hours.
-- Plan around the hanging window rather than machine start.
-- Treat laundry as a workflow (sort → wash → hang → drying rack), not as a single task.
+This protocol is authoritative for all planning actions.
+
+# Planning State
+
+Retrieve the latest "Planning State" email from Gmail (it may have been archived) before performing any planning action.
+
+# Configured calendars
+
+Read Google_calendar_ids.txt from the planning sources when the protocol requests the configured calendars.
+
+# Preferences
+
+Read preferences.md to load user-specific planning preferences to be used in supporting the user in planning their day.
+
+# Planning commands
+
+Before executing Display plan or Generate plan, verify that:
+
+1. the latest Planning Protocol has been loaded.
+2. the latest Planning State has been loaded.
+3. the list of calendars has been loaded.
+4. the planning preferences have been loaded.
+
+If either prerequisite is missing, load it first.
+
+Display plan: execute the Display Algorithm from the protocol.
+Generate plan: execute the Generate Algorithm from the protocol.
+
+If any required source cannot be loaded, abort the requested planning action. State which source is missing and do not claim to have followed the protocol or to have information from that source.
+```
+
 
 ---
 
@@ -342,3 +372,7 @@ This document is configuration, not planning state.
 - Added support for multiple configured Google Calendars.
 - Refined instructions in several locations.
 - Added section to prevent independent agent action based on to do items.
+
+### Version 5
+- Included example agent instructions.
+- Moved **Preferences and Heuristics** to a separate configuration file.
