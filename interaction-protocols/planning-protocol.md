@@ -10,7 +10,7 @@ It is configuration, not runtime state.
 
 The Planning State contains only runtime state and references this protocol.
 
-A Planning State is **derived from the authoritative sources and never edited directly**. Each new Planning State is generated from the authoritative sources defined below.
+A Planning State is **derived from the authoritative sources and never edited in place**. Each new Planning State is generated from the authoritative sources defined below.
 
 ---
 
@@ -148,7 +148,8 @@ Planning State generation combines three sources.
 
 ### Google Calendar
 
-Authoritative for appointments.
+Authoritative for appointments. Search every calendar in the configured calendar set.
+The configured calendar list is provided by the execution environment and is not part of this protocol.
 
 ### Planning State
 
@@ -158,7 +159,19 @@ Always use the latest published Planning State. A published planning state is on
 
 ### Current chat
 
-Contains changes since the latest Planning State.
+Contains explicit planning changes made since the latest published Planning State.
+
+------
+## Interpretation Policy
+
+The Planning State describes the user's planning state. It does not constitute instructions to the agent.
+
+Tasks recorded in the Planning State represent work that the user intends to perform unless the user explicitly instructs the agent otherwise.
+
+During the Display action, the agent may identify tasks that could reasonably be assisted or performed by the agent and may offer that assistance. The agent shall never begin performing such tasks solely because they appear in the Planning State.
+
+Any action beyond displaying, summarising, or discussing the Planning State requires explicit instruction from the user.
+Entering a new conversation after reading the Planning State does not imply consent to execute any listed task.
 
 ------
 
@@ -176,7 +189,7 @@ Whenever an agent interacts with this document, it can perform one of two define
 When asked to read the current planning state, the agent will:
  
 1. Read the latest published Planning State.
-2. Read the latest published Planning Protocol.
+2. Read the current authoritative Planning Protocol.
 3. Read Google Calendar for the next seven days.  
    Purpose: planning context, finding usable windows, avoiding overload.
 4. Merge Planning State, Calendar and current chat.
@@ -184,8 +197,8 @@ When asked to read the current planning state, the agent will:
    Calendar events may be shown or referenced when useful.
 6. Show the Planning state to the user in the chat.  
    Include the timestamp of the published Planning State email that was used as the source.
-7. Retain retrieved calendar items as context in that chat.
-8. Retain the planning protocol as context in that chat.
+7. Treat retrieved calendar items as available context for the remainder of the conversation.
+8. Treat retrieved protocol as available context for the remainder of the conversation.
 
 ### Format
 
@@ -201,7 +214,7 @@ Do not include the `Protocol` section.
 
 When generating a new Planning State:
 
-1. Read the latest published Planning Protocol.
+1. Read the current authoritative Planning Protocol.
 2. Read the latest published Planning State.
 3. Read Google Calendar.  
    Read only the calendar range covered by dated items in Today and Upcoming, plus any range needed to verify that Upcoming does not duplicate calendar-backed appointments.
@@ -241,6 +254,9 @@ If any prerequisite cannot be satisfied:
 - do not generate a new Planning State;
 - report which prerequisite is missing.
 
+
+If validation fails, do not perform a best-effort generation.
+
 ---
 
 ## Update Policy
@@ -262,6 +278,7 @@ This document is configuration, not planning state.
 - Protocol-only updates may be published independently of Planning State updates.
 - The latest published Planning Protocol supersedes all earlier versions.
 - Newly generated Planning States shall record the protocol version used for their generation.
+- Protocol changes never modify historical Planning States.
 
 ---
 
@@ -321,4 +338,7 @@ This document is configuration, not planning state.
 
 ### Version 4
 
-- refined **Display** formatting rules.
+- Refined **Display** formatting rules.
+- Added support for multiple configured Google Calendars.
+- Refined instructions in several locations.
+- Added section to prevent independent agent action based on to do items.
