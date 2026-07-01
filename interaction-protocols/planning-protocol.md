@@ -1,6 +1,6 @@
 # Planning Protocol
 
-**Version:** 5
+**Version:** 6
 
 ## Purpose
 
@@ -168,7 +168,7 @@ The Planning State describes the user's planning state. It does not constitute i
 
 Tasks recorded in the Planning State represent work that the user intends to perform unless the user explicitly instructs the agent otherwise.
 
-During the Display action, the agent may identify tasks that could reasonably be assisted or performed by the agent and may offer that assistance. The agent shall never begin performing such tasks solely because they appear in the Planning State.
+During the Display action, the agent MAY identify tasks that could reasonably be assisted or performed by the agent. The agent MAY offer to assist in completing identified tasks. The agent MUST NOT begin performing such tasks without first obtaining specific explicit consent from the user. Partial execution of tasks is also prohibited.
 
 Any action beyond displaying, summarising, or discussing the Planning State requires explicit instruction from the user.
 Entering a new conversation after reading the Planning State does not imply consent to execute any listed task.
@@ -186,10 +186,10 @@ Whenever an agent interacts with this document, it can perform one of two define
 
 ## Display Algorithm
 
-When asked to read the current planning state, the agent will:
+When asked to read the current planning state, the agent will do the following in order:
  
-1. Read the latest published Planning State.
-2. Read the current authoritative Planning Protocol.
+1. Load and apply the current authoritative Planning Protocol.
+2. Read the latest published Planning State.
 3. Read Google Calendar for the next seven days.  
    Purpose: planning context, finding usable windows, avoiding overload.
 4. Merge Planning State, Calendar and current chat.
@@ -212,9 +212,9 @@ Do not include the `Protocol` section.
 
 ## Generation Algorithm
 
-When generating a new Planning State:
+When generating a new Planning State, the agent will do the following in order:
 
-1. Read the current authoritative Planning Protocol.
+1. Load and apply the current authoritative Planning Protocol.
 2. Read the latest published Planning State.
 3. Read Google Calendar.  
    Read only the calendar range covered by dated items in Today and Upcoming, plus any range needed to verify that Upcoming does not duplicate calendar-backed appointments.
@@ -294,40 +294,78 @@ This protocol assumes three external sources:
          - preferences.txt to contain user-specific planning preferences
 
 ```text
-# Planning Protocol
+## Connector initialization
 
-Load and follow the latest Planning Protocol from:
-https://github.com/Anique11/engineering-principles/blob/main/interaction-protocols/planning-protocol.md
+Whenever an external source is required, do the following in order:
 
-This protocol is authoritative for all planning actions.
+1. Determine which connector provides that source.
+2. If the connector is not available in this conversation, initialise and then load it.
+3. Once the connector is available, retrieve the required information.
+4. If retrieval fails, repeat steps 2 and then 3 exactly once.
+5. Only if retrieval fails after completing step 4 may the source be considered unavailable.
+6. Do not skip retrieval solely because the connector was not initially available.
 
-# Planning State
+For the current setup the required connectors are those for Gmail and Google Calendar.
 
-Retrieve the latest "Planning State" email from Gmail (it may have been archived) before performing any planning action.
+# Planning Configuration Sources
 
-# Configured calendars
+Load the planning configuration files required by the Planning Protocol.
+Current configuration files:
 
-Read Google_calendar_ids.txt from the planning sources when the protocol requests the configured calendars.
+- planning-protocol.md
+- Google_calendar_ids.txt
+- planning_preferences.md
 
-# Preferences
+In any new chat, disregard as stale any previously known configuration information. Then read the files from the project sources.
 
-Read preferences.md to load user-specific planning preferences to be used in supporting the user in planning their day.
+## Source integrity requirements
+
+Planning actions must use only information loaded during the current conversation.
+
+Do not substitute information remembered from:
+- previous conversations,
+- project instructions,
+- model memory,
+- earlier planning sessions,
+- summaries of external sources.
+
+Every authoritative value must be reloaded from its authoritative source before it is used.
+
+If a required source cannot be loaded:
+
+- make a genuine attempt to retrieve it using the available tools;
+- if retrieval still fails, abort the planning action;
+- state which required source could not be loaded;
+- do not claim to have followed the Planning Protocol.
+
+# Planning State Source
+
+Retrieve the latest **"Planning State"** email from Gmail (it may have been archived) before performing any planning action.
 
 # Planning commands
 
-Before executing Display plan or Generate plan, verify that:
+Before executing **Display Plan** or **Generate Plan**, complete the following checklist in order:
 
-1. the latest Planning Protocol has been loaded.
-2. the latest Planning State has been loaded.
-3. the list of calendars has been loaded.
-4. the planning preferences have been loaded.
+1. Before every Display or Generate action, initialize and load every connector required by that action, regardless of whether it was previously initialized in the conversation.
+2. Load all Planning Configuration files required by the Planning Protocol.
+3. Load the latest Planning State from Gmail.
+4. Execute the requested algorithm from the loaded Planning Protocol.
 
-If either prerequisite is missing, load it first.
+## Planning audit
 
-Display plan: execute the Display Algorithm from the protocol.
-Generate plan: execute the Generate Algorithm from the protocol.
+Every successful **Display Plan** or **Generate Plan** response must include:
 
-If any required source cannot be loaded, abort the requested planning action. State which source is missing and do not claim to have followed the protocol or to have information from that source.
+Planning audit
+
+- Planning Protocol loaded from: <location>, version <from the Planning Protocol>
+- Protocol last modified: <from the Planning Protocol>
+- Planning State loaded from: Gmail <timestamp from the Planning State email>, created with version <protocol version from the Planning State>
+- Calendar configuration loaded from: <location>
+- Planning preferences loaded from: <location>
+
+Every audit field must be obtained from its authoritative source.
+
+If any audit field cannot be obtained from its authoritative source, abort the planning action instead of displaying or generating a plan.
 ```
 
 
@@ -376,3 +414,6 @@ If any required source cannot be loaded, abort the requested planning action. St
 ### Version 5
 - Included example agent instructions.
 - Moved **Preferences and Heuristics** to a separate configuration file.
+
+### Version 6
+- Small reordering and wording change to improve the probability of the protocol being adhered to completely.
